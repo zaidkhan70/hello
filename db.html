@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Specifies the character encoding for the HTML document -->
+  <meta charset="UTF-8">
+  
+  <!-- Sets the viewport to make the website responsive on different devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- The title of the webpage that appears in the browser tab -->
+  <title>Firebase Email Registration</title>
+  
+  <!-- Includes Tailwind CSS from a CDN for styling the webpage -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <!-- 
+    Main container for the registration form.
+    Tailwind classes:
+    - bg-white: White background
+    - p-6: Padding of 1.5rem
+    - rounded-xl: Extra large rounded corners
+    - shadow-blue-200: Blue shadow for depth
+    - w-full max-w-sm: Full width on small screens, max width small
+  -->
+  <div id="registration-form" class="bg-white p-6 rounded-xl shadow-blue-200 w-full max-w-sm">
+    <!-- Header for the registration form -->
+    <h2 class="text-xl font-semibold mb-4 text-center">Register</h2>
+
+    <!-- 
+      Input field for the user's email.
+      Attributes:
+      - type="email": Validates email format
+      - id="email": Unique identifier for JavaScript access
+      - required: Makes the field mandatory
+      - Tailwind classes for styling
+    -->
+    <input type="email" id="email" required class="w-full px-3 py-2 border rounded mb-4" placeholder="Email">
+    
+    <!-- 
+      Input field for the user's username.
+      Similar attributes and styling as the email field.
+    -->
+    <input type="text" id="username" required class="w-full px-3 py-2 border rounded mb-4" placeholder="Username">
+    
+    <!-- 
+      Input field for the user's phone number.
+      type="text" allows various phone formats.
+    -->
+    <input type="text" id="phone" required class="w-full px-3 py-2 border rounded mb-4" placeholder="Phone Number">
+    
+    <!-- 
+      Input field for the user's password.
+      type="password" masks the input for privacy.
+    -->
+    <input type="password" id="password" required class="w-full px-3 py-2 border rounded mb-4" placeholder="Password">
+    
+    <!-- 
+      Submit button for the registration form.
+      When clicked, it triggers the registration process.
+    -->
+    <button type="submit" id="submit" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Register</button>
+    
+    <!-- 
+      Paragraph to display messages like success or error.
+      Initially empty; populated via JavaScript.
+    -->
+    <p id="message" class="text-center text-sm"></p>
+    
+    <!-- 
+      Link to the login page for users who already have an account.
+      Styled with Tailwind to look like a button/link.
+    -->
+    <p>Already have an account? <a href="login.html" class="text-blue-500">Login</a></p>
+  </div>
+
+  <!-- 
+    Container to display user details after successful registration/login.
+    Initially hidden; shown when a user is logged in.
+  -->
+  <div id="user-details" class="bg-white p-6 rounded-xl shadow-blue-200 w-full max-w-sm hidden">
+    <!-- Header for the user details section -->
+    <h2 class="text-xl font-semibold mb-4 text-center">User Details</h2>
+    
+    <!-- 
+      Paragraphs to display the user's email, username, and phone number.
+      These are populated via JavaScript.
+    -->
+    <p id="user-email" class="mb-4 text-center"></p>
+    <p id="user-username" class="mb-4 text-center"></p>
+    <p id="user-phone" class="mb-4 text-center"></p>
+    
+    <!-- 
+      Confirmation message indicating the user is logged in.
+    -->
+    <p class="text-center">You are logged in!</p>
+    
+    <!-- 
+      Logout button to allow the user to sign out.
+      Triggers the sign-out process when clicked.
+    -->
+    <button id="logout-button" class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 mt-4">Logout</button>
+  </div>
+
+  <!-- 
+    JavaScript section to handle Firebase operations and user interactions.
+    Uses ES6 module syntax for importing Firebase modules.
+  -->
+  <script type="module">
+    // Import necessary Firebase modules from the Firebase CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    // Firebase configuration object containing all necessary keys and identifiers
+    const firebaseConfig = {
+    apiKey: "AIzaSyCwPkctVIn2qlkwTHOFjRU-BgRAliSkwyc",
+    authDomain: "practise-7f1af.firebaseapp.com",
+    databaseURL: "https://practise-7f1af-default-rtdb.firebaseio.com",
+    projectId: "practise-7f1af",
+    storageBucket: "practise-7f1af.firebasestorage.app",
+    messagingSenderId: "557684882952",
+    appId: "1:557684882952:web:2882228059521ec52e5bbd",
+    measurementId: "G-P8DDZEF6BH"
+  };
+
+    // Initialize Firebase with the provided configuration
+    const app = initializeApp(firebaseConfig);
+    
+    // Initialize Firebase Authentication and get a reference to the service
+    const auth = getAuth(app);
+    
+    // Initialize Firebase Realtime Database and get a reference to the service
+    const database = getDatabase(app);
+
+    // 
+    // Listener to check the authentication state of the user.
+    // It runs whenever the user's sign-in state changes.
+    //
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // If a user is signed in, fetch their details from the database
+        const userRef = ref(database, 'users/' + user.uid); // Reference to the user's data in the database
+        get(userRef).then((snapshot) => {
+          if (snapshot.exists()) {
+            const userData = snapshot.val(); // Retrieve user data
+            
+            // Populate the user details section with fetched data
+            document.getElementById("user-email").innerText = "Email: " + userData.email;
+            document.getElementById("user-username").innerText = "Username: " + userData.username;
+            document.getElementById("user-phone").innerText = "Phone Number: " + userData.phone;
+
+            // Hide the registration form and show the user details section
+            document.getElementById('registration-form').classList.add('hidden');
+            document.getElementById('user-details').classList.remove('hidden');
+          }
+        });
+      } else {
+        // If no user is signed in, show the registration form and hide user details
+        document.getElementById('registration-form').classList.remove('hidden');
+        document.getElementById('user-details').classList.add('hidden');
+      }
+    });
+
+    // 
+    // Event listener for the registration form's submit button.
+    // It handles user registration when the button is clicked.
+    //
+    const submitbutton = document.getElementById('submit');
+    submitbutton.addEventListener('click', () => {
+      // Retrieve values entered by the user in the form fields
+      const email = document.getElementById("email").value;
+      const username = document.getElementById("username").value;
+      const phone = document.getElementById("phone").value;
+      const password = document.getElementById("password").value;
+
+      // Use Firebase Authentication to create a new user with email and password
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userAuth) => {
+          const user = userAuth.user; // Get the created user object
+
+          // Display a success message to the user
+          document.getElementById("message").innerHTML = "Registration Successful";
+
+          // 
+          // Save additional user details (username and phone) to the Realtime Database
+          //
+          const userRef = ref(database, 'users/' + user.uid); // Reference to the user's data location
+          set(userRef, {
+            email: email, // Store user's email
+            username: username, // Store user's username
+            phone: phone, // Store user's phone number
+            uid: user.uid // Store user's unique ID
+          });
+
+          // Hide the registration form and show the user details section
+          document.getElementById('registration-form').classList.add('hidden');
+          document.getElementById('user-details').classList.remove('hidden');
+
+          // Populate the user details section with the entered data
+          document.getElementById("user-email").innerText = "Email: " + email;
+          document.getElementById("user-username").innerText = "Username: " + username;
+          document.getElementById("user-phone").innerText = "Phone Number: " + phone;
+        })
+        .catch((error) => {
+          // If there's an error during registration, display the error message
+          document.getElementById("message").innerHTML = "Error: " + error.message;
+        });
+    });
+
+    // 
+    // Event listener for the logout button.
+    // It handles signing out the user when clicked.
+    //
+    const logoutButton = document.getElementById('logout-button');
+    logoutButton.addEventListener('click', () => {
+      // Use Firebase Authentication to sign out the current user
+      signOut(auth)
+        .then(() => {
+          // If sign-out is successful, show the registration form and hide user details
+          document.getElementById('registration-form').classList.remove('hidden');
+          document.getElementById('user-details').classList.add('hidden');
+          
+          // Display a logout confirmation message
+          document.getElementById("message").innerHTML = "You have been logged out.";
+        })
+        .catch((error) => {
+          // If there's an error during sign out, display the error message
+          document.getElementById("message").innerHTML = "Error: " + error.message;
+        });
+    });
+  </script>
+</body>
+</html>
